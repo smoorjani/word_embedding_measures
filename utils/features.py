@@ -24,4 +24,12 @@ def get_volume(chunks_emb: list):
 
 def get_circuitousness(chunks_emb: list):
     # TODO: implement this
+    """[summary]
+
+    Args:
+        chunks_emb (list): [description]
+
+    Returns:
+        [type]: [description]
+    """
     pass
