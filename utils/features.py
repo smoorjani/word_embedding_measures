@@ -18,13 +18,13 @@ def get_speed(chunks_emb: list):
     avg_speed = sum(distances) / (T-1)
     return distances, avg_speed
 
-def get_volume(chunks_emb: list, tol: float):
+def get_volume(chunks_emb: list, tol: float = 0.01):
     # Code based from
     # Nima Moshtagh (nima@seas.upenn.edu)
     # University of Pennsylvania
     d = len(chunks_emb)
     N = len(chunks_emb[0])
-    Q = np.zeros(d+1,N)
+    Q = np.zeros((d+1,N))
     Q[1:d,:] = chunks_emb[1:d,1:N]
     Q[d+1,:] = np.ones[1,N]
     count = 1
@@ -56,7 +56,14 @@ def get_volume(chunks_emb: list, tol: float):
 
     # center of the ellipse 
     c = chunks_emb * u
-    pass
+
+    U, s, _ = np.linalg.svd(A)
+    radii = 1.0/np.sqrt(s)
+    return get_ellipsoid_volume(radii)
+
+def get_ellipsoid_volume(radii):
+    """Calculate the volume of the blob"""
+    return 4./3.*np.pi*radii[0]*radii[1]*radii[2]
 
 def get_circuitousness(chunks_emb: list):
     """[summary]
