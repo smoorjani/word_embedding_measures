@@ -12,7 +12,6 @@ from utils.data import load_data, get_word_tokenized_corpus, get_data_property, 
 from utils.embeddings import load_fasttext_embedding, get_chunk_embeddings
 from utils.features import get_speed, get_volume, get_circuitousness
 
-
 def setup_args(parser):
     # TODO: allow multiple files to be used. Maybe use a data directory.
     parser.add_argument("--data_file", type=str, default='data/dblp-ref-0.json', help="File to load data from.")
