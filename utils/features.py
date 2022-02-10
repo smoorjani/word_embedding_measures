@@ -32,4 +32,7 @@ def get_circuitousness(chunks_emb: list):
     Returns:
         [type]: [description]
     """
-    pass
+    distances, avg_speed = get_speed(chunks_emb)
+    minimum = np.min(distances)
+    circuitousness = sum(distances)/minimum
+    return circuitousness
