@@ -1,4 +1,3 @@
-from pkgutil import get_data
 import nltk
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
@@ -6,7 +5,11 @@ nltk.download('punkt')
 nltk.download('wordnet')
 nltk.download('stopwords')
 nltk.download('omw-1.4')
+
+import glob
 import argparse
+import numpy as np
+from sklearn.linear_model import Lasso
 
 from utils.data import load_data, get_word_tokenized_corpus, get_data_property, get_data_chunks
 from utils.embeddings import load_fasttext_embedding, get_chunk_embeddings
@@ -27,7 +30,14 @@ if __name__ == "__main__":
     en_stop = set(stopwords.words('english'))
 
     print('Loading data...')
-    data = load_data(args['data_file'])
+    data = None
+    if args['data_file'][-1] == '/':
+        data = []
+        for filename in glob.glob(args['data_file'] + '*.json'):
+            data.extend(load_data(filename))
+    else:
+        data = load_data(args['data_file'])
+
     abstracts = get_data_property(data, "abstract")
     citation_counts = get_data_property(data, "n_citation")
 
@@ -43,8 +53,15 @@ if __name__ == "__main__":
 
     # TODO: get features like speed, volume, and circuitousness
     print('Getting features...')
-    speeds = [get_speed(chunk_emb) for chunk_emb in chunk_embs]
-    volumes = [get_volume(chunk_emb) for chunk_emb in chunk_embs]
-    circuitousness = [get_circuitousness(chunk_emb) for chunk_emb in chunk_embs]
+    features = {}
+    features['speed'] = [get_speed(chunk_emb)[-1] for chunk_emb in chunk_embs]
+    features['volume'] = [get_volume(chunk_emb) for chunk_emb in chunk_embs]
+    features['circuitousness'] = [get_circuitousness(chunk_emb) for chunk_emb in chunk_embs]
+
+    for key, value in features.items():
+        clf = Lasso(alpha=0.1)
+        clf.fit(np.array(citation_counts).reshape(-1, 1),value)
+        print(f'{key} coeff {clf.coef_}')
+
 
 

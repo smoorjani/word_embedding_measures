@@ -18,50 +18,67 @@ def get_speed(chunks_emb: list):
     avg_speed = sum(distances) / (T-1)
     return distances, avg_speed
 
-def get_volume(chunks_emb: list, tol: float = 0.01):
-    # Code based from
-    # Nima Moshtagh (nima@seas.upenn.edu)
-    # University of Pennsylvania
-    d = len(chunks_emb)
-    N = len(chunks_emb[0])
-    Q = np.zeros((d+1,N))
-    Q[1:d,:] = chunks_emb[1:d,1:N]
-    Q[d+1,:] = np.ones[1,N]
-    count = 1
-    err = 1
-    u = (1/N) * np.ones(N,1)          # 1st iteration
+    
+def get_volume(chunk_emb, tolerance=0.01):
+    """ Find the minimum volume ellipsoid which holds all the points
+    
+    Based on work by Nima Moshtagh
+    http://www.mathworks.com/matlabcentral/fileexchange/9542
+    and also by looking at:
+    http://cctbx.sourceforge.net/current/python/scitbx.math.minimum_covering_ellipsoid.html
+    Which is based on the first reference anyway!
+    
+    Here, P is a numpy array of N dimensional points like this:
+    P = [[x,y,z,...], <-- one point per line
+            [x,y,z,...],
+            [x,y,z,...]]
+    
+    Returns:
+    (center, radii, rotation)
+    
+    """
+    P = np.stack(chunk_emb, axis=0)
+
+    (N, d) = np.shape(P)
+    d = float(d)
+
+    # Q will be our working array
+    Q = np.vstack([np.copy(P.T), np.ones(N)]) 
+    QT = Q.T
+    
+    # initializations
+    err = 1.0 + tolerance
+    u = (1.0 / N) * np.ones(N)
 
     # Khachiyan Algorithm
-    while err > tol:
-        X = Q * np.diag(u) * np.transpose(Q)       # X = \sum_i ( u_i * q_i * q_i')  is a (d+1)x(d+1) matrix
-        M = np.diag(np.transpose(Q) * np.inv(X) * Q)  #M the diagonal vector of an NxN matrix
-        j = max(M)
-        step_size = (j - d -1)/((d+1)*(j-1))
-        new_u = (1 - step_size)*u
-        new_u[j] = new_u[j] + step_size
-        count = count + 1
-        err = np.norm(new_u - u)
+    while err > tolerance:
+        V = np.dot(Q, np.dot(np.diag(u), QT))
+        M = np.diag(np.dot(QT , np.dot(np.linalg.inv(V), Q)))    # M the diagonal vector of an NxN matrix
+        j = np.argmax(M)
+        maximum = M[j]
+        step_size = (maximum - d - 1.0) / ((d + 1.0) * (maximum - 1.0))
+        new_u = (1.0 - step_size) * u
+        new_u[j] += step_size
+        err = np.linalg.norm(new_u - u)
         u = new_u
-    
-    ''' Computing the Ellipse parameters
-     Finds the ellipse equation in the 'center form': 
-     (x-c)' * A * (x-c) = 1
-     It computes a dxd matrix 'A' and a d dimensional vector 'c' as the center
-     of the ellipse. 
-    '''
-    U = np.diag(u)
-
-    # the A matrix for the ellipse
-    A = (1/d) * np.inv(chunks_emb * U * np.transpose(chunks_emb) - (chunks_emb * u)*np.transpose(chunks_emb*u) )
 
     # center of the ellipse 
-    c = chunks_emb * u
+    center = np.dot(P.T, u)
 
-    U, s, _ = np.linalg.svd(A)
+    # the A matrix for the ellipse
+    A = np.linalg.inv(
+                    np.dot(P.T, np.dot(np.diag(u), P)) - 
+                    np.array([[a * b for b in center] for a in center])
+                    ) / d
+                    
+    # Get the values we'd like to return
+    U, s, rotation = np.linalg.svd(A)
     radii = 1.0/np.sqrt(s)
-    return get_ellipsoid_volume(radii)
+    
+    # return (center, radii, rotation)
+    return getEllipsoidVolume(radii)
 
-def get_ellipsoid_volume(radii):
+def getEllipsoidVolume(radii):
     """Calculate the volume of the blob"""
     return 4./3.*np.pi*radii[0]*radii[1]*radii[2]
 

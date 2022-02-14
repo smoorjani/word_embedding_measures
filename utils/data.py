@@ -38,12 +38,16 @@ def get_word_tokenized_corpus(abstracts: list, stemmer: nltk.stem.WordNetLemmati
     word_punctuation_tokenizer = WordPunctTokenizer()
     return [word_punctuation_tokenizer.tokenize(sent) for sent in final_corpus]
 
-def load_data(filename: str) -> list:
+def load_data(filename: str, limit: int = -1) -> list:
     with open(filename, 'r') as f:
         data = f.readlines()
 
-    data_dicts = [json.loads(d) for d in data]
-    return [d for d in data_dicts if 'abstract' in d and 'n_citation' in d][:100]
+    if limit > 0:
+        data_dicts = [json.loads(d) for d in data[:100]]
+    else: 
+        data_dicts = [json.loads(d) for d in data]
+        
+    return [d for d in data_dicts if 'abstract' in d and 'n_citation' in d]
 
 def get_data_property(data: list, property: str = "abstract") -> list:
     """Gets a specific property from a dataset of JSONs
