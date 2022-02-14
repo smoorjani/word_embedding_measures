@@ -17,12 +17,12 @@ def load_fasttext_embedding(word_tokenized_corpus: list, embedding_size: int = 3
         gensim.models.fasttext.FastText: trained FastText model
     """
     ft_model = FastText(word_tokenized_corpus,
-                      size=embedding_size,
+                      vector_size=embedding_size,
                       window=window_size,
                       min_count=min_word,
                       sample=down_sampling,
                       sg=1,
-                      iter=100)
+                      epochs=100)
 
     return ft_model
 
