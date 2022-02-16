@@ -37,8 +37,8 @@ def get_volume(chunk_emb, tolerance=0.01):
     (center, radii, rotation)
     
     """
-    P = np.stack(chunk_emb, axis=0)
-
+    # P = np.stack(chunk_emb, axis=0)
+    P = chunk_emb
     (N, d) = np.shape(P)
     d = float(d)
 
@@ -72,7 +72,12 @@ def get_volume(chunk_emb, tolerance=0.01):
                     ) / d
                     
     # Get the values we'd like to return
-    U, s, rotation = np.linalg.svd(A)
+    try:
+        U, s, rotation = np.linalg.svd(A)
+    except np.linalg.LinAlgError:
+        print(chunk_emb)
+        # TODO: fix whatever is going wrong here
+        return 0
     radii = 1.0/np.sqrt(s)
     
     # return (center, radii, rotation)
@@ -82,7 +87,7 @@ def getEllipsoidVolume(radii):
     """Calculate the volume of the blob"""
     return 4./3.*np.pi*radii[0]*radii[1]*radii[2]
 
-def get_circuitousness(chunks_emb: list):
+def get_circuitousness(chunks_emb: list, eps: float = 0.05):
     """[summary]
 
     Args:
@@ -92,6 +97,15 @@ def get_circuitousness(chunks_emb: list):
         [type]: [description]
     """
     distances, avg_speed = get_speed(chunks_emb)
-    minimum = np.min(distances)
+
+    # ensure that minimum is not too low - skewing coefficient
+    minimum = 0
+    if np.max(distances) < eps:
+        minimum = eps
+    else:
+        minimum = np.min([d for d in distances if d > eps])
     circuitousness = sum(distances)/minimum
+
+    if circuitousness > 1000:
+        print(distances, minimum, circuitousness)
     return circuitousness
