@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#SBATCH -p RM-small
+#SBATCH -t 4:00:00
+#SBATCH -N 1
+#SBATCH --ntasks-per-node=64
+
+source /jet/home/moorjani/env/bin/activate
+cd /jet/home/moorjani/word_embedding_measures
+python main.py > log.txt

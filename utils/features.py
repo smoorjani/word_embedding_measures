@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats.mstats import gmean
 
 def get_speed(chunks_emb: list):
     """[summary]
@@ -78,10 +79,12 @@ def get_volume(chunk_emb, tolerance=0.01):
         print(chunk_emb)
         # TODO: fix whatever is going wrong here
         return 0
-    radii = 1.0/np.sqrt(s)
+
+    return getEllipsoidVolume(np.sqrt(s))/gmean(np.sqrt(np.diagonal(s)))
+    # radii = np.sqrt(s)
     
     # return (center, radii, rotation)
-    return getEllipsoidVolume(radii)
+    # return getEllipsoidVolume(radii)
 
 def getEllipsoidVolume(radii):
     """Calculate the volume of the blob"""
