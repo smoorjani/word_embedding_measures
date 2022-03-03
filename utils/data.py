@@ -38,16 +38,9 @@ def get_word_tokenized_corpus(abstracts: list, stemmer: nltk.stem.WordNetLemmati
     word_punctuation_tokenizer = WordPunctTokenizer()
     return [word_punctuation_tokenizer.tokenize(sent) for sent in final_corpus]
 
-def load_data(filename: str, limit: int = -1) -> list:
-    with open(filename, 'r') as f:
-        data = f.readlines()
-
-    data_dicts = [json.loads(d) for d in data]
-    valid_data_dicts = [d for d in data_dicts if 'abstract' in d and 'n_citation' in d]
-    if limit > 0:
-        return valid_data_dicts[:limit]
-    return valid_data_dicts
-
+'''
+Interacting with Data Dicts
+'''
 def get_data_property(data: list, property: str = "abstract") -> list:
     """Gets a specific property from a dataset of JSONs
 
@@ -72,4 +65,42 @@ def get_data_chunks(abstract: str, T: int = 20) -> list:
         chunks.append(chunk)
 
     return chunks
+
+'''
+Loading Data from Files
+'''
+def load_datafile(filename: str, limit: int = -1) -> list:
+    with open(filename, 'r') as f:
+        data = f.readlines()
+
+    data_dicts = [json.loads(d) for d in data]
+    valid_data_dicts = [d for d in data_dicts if 'abstract' in d and 'n_citation' in d]
+    if limit > 0:
+        return valid_data_dicts[:limit]
+    return valid_data_dicts
+
+def load_jsondata(args):
+    data = None
+    proj_dir = args['proj_dir']
+    if proj_dir + args['data_file'][-1] == '/':
+        data = []
+        for filename in glob.glob(proj_dir + args['data_file'] + '*.json'):
+            data.extend(load_datafile(filename))
+    else:
+        data = load_datafile(proj_dir + args['data_file'], limit=args['limit'])
+    return data
+
+def load_txtdata(args):
+    with open(args['proj_dir'] + args['data_file'], 'r') as f:
+        data = f.readlines()
+    data_dicts = [{'abstract': sent, 'n_citation': 1} for sent in data]
+    return data_dicts
+
+def load_data(args):
+    data = None
+    if '.json' in args['data_file'] or args['data_file'][-1] == '/':
+        data = load_jsondata(args)
+    else:
+        data = load_txtdata(args)
+    return data
 

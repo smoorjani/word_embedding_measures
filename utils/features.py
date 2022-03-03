@@ -80,7 +80,7 @@ def get_volume(chunk_emb, tolerance=0.01):
         # TODO: fix whatever is going wrong here
         return 0
 
-    return getEllipsoidVolume(np.sqrt(s))/gmean(np.sqrt(np.diagonal(s)))
+    return 1/gmean(np.sqrt(s))
     # radii = np.sqrt(s)
     
     # return (center, radii, rotation)

@@ -13,14 +13,14 @@ from os.path import exists
 from sklearn.linear_model import Lasso
 
 from utils.data import load_data, get_word_tokenized_corpus, get_data_property, get_data_chunks
-from utils.embeddings import load_fasttext_embedding, get_chunk_embeddings, save_fasttext, load_fasttext
+from utils.embeddings import train_fasttext_embedding, get_chunk_embeddings, save_fasttext, load_fasttext
 from utils.features import get_speed, get_volume, get_circuitousness
 
 def setup_args(parser):
-    parser.add_argument("--model_name", type=str, default='fasttext_model/ft_model.model', help="File to load data from.")
+    parser.add_argument("--model_name", type=str, default='fasttext_model/wiki-news-300d-1M.vec', help="File to load data from.")
     parser.add_argument("--data_file", type=str, default='data/dblp-ref-0.json', help="File to load data from.")
     parser.add_argument("--chunk_embs_file", type=str, default='data/chunk_embs.txt', help="File to save/load chunks from.")
-    parser.add_argument("--proj_dir", type=str, default='./', help="Directory storing all data/models.")
+    parser.add_argument("--proj_dir", type=str, default='./saved/', help="Directory storing all data/models.")
 
     parser.add_argument("--limit", type=int, default=30000, help="Number of abstracts to train on")
     # TODO: allow user to create chunks based on length (e.g. I want a chunk to be a sentence or I want a chunk to be 5 tokens)
@@ -37,14 +37,7 @@ def setup():
     en_stop = set(stopwords.words('english'))
 
     print('Loading data...')
-    data = None
-    if proj_dir + args['data_file'][-1] == '/':
-        data = []
-        for filename in glob.glob(proj_dir + args['data_file'] + '*.json'):
-            data.extend(load_data(filename))
-    else:
-        data = load_data(proj_dir + args['data_file'], limit=args['limit'])
-
+    data = load_data(args)
     abstracts = get_data_property(data, "abstract")
     citation_counts = get_data_property(data, "n_citation")
 
@@ -56,7 +49,7 @@ def setup():
         # tokenize data and train fasttext model
         print('Training model...')
         tokenized_data = get_word_tokenized_corpus(abstracts, stemmer, en_stop)
-        ft_model = load_fasttext_embedding(tokenized_data) 
+        ft_model = train_fasttext_embedding(tokenized_data) 
         save_fasttext(ft_model, proj_dir + args['model_name'])
 
     return args, ft_model, abstracts, citation_counts

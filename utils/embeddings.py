@@ -1,10 +1,11 @@
+import io
 import numpy as np
 
 import gensim
 from gensim.test.utils import get_tmpfile
 from gensim.models.fasttext import FastText
 
-def load_fasttext_embedding(word_tokenized_corpus: list, embedding_size: int = 300, window_size: int = 40, min_word: int = 3, down_sampling: float = 1e-2) -> gensim.models.fasttext.FastText:
+def train_fasttext_embedding(word_tokenized_corpus: list, embedding_size: int = 300, window_size: int = 40, min_word: int = 3, down_sampling: float = 1e-2) -> gensim.models.fasttext.FastText:
     """Trains and returns a FastText model
 
     Args:
@@ -31,10 +32,23 @@ def save_fasttext(ft_model, filename):
     fname = get_tmpfile(filename)
     ft_model.save(fname)
 
+class PretrainedFastText:
+    def __init__(self, data):
+        self.wv = data
+
 def load_fasttext(filename):
-    fname = get_tmpfile(filename)
-    ft_model = FastText.load(fname)
-    return ft_model
+    # fname = get_tmpfile(filename)
+    if '.vec' in filename:
+        fin = io.open(filename, 'r', encoding='utf-8', newline='\n', errors='ignore')
+        n, d = map(int, fin.readline().split())
+        data = {}
+        for line in fin:
+            tokens = line.rstrip().split(' ')
+            data[tokens[0]] = map(float, tokens[1:])
+        return PretrainedFastText(data)
+    else:
+        ft_model = FastText.load(filename)
+        return ft_model
 
 def get_chunk_embeddings(ft_model: gensim.models.fasttext.FastText, chunks: list) -> list:
     avg_embs = []
