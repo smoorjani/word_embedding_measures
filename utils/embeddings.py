@@ -2,11 +2,12 @@ import io
 import numpy as np
 
 import gensim
-from gensim.test.utils import get_tmpfile
-from gensim.models.fasttext import FastText
+from gensim.test.utils import get_tmpfile, datapath
+from gensim.models.fasttext import FastText, load_facebook_vectors, load_facebook_model 
+from gensim.models.keyedvectors import load_word2vec_format
 
-def train_fasttext_embedding(word_tokenized_corpus: list, embedding_size: int = 300, window_size: int = 40, min_word: int = 3, down_sampling: float = 1e-2) -> gensim.models.fasttext.FastText:
-    """Trains and returns a FastText model
+def pretrain_fasttext_embedding(word_tokenized_corpus: list, embedding_size: int = 300, window_size: int = 40, min_word: int = 3, down_sampling: float = 1e-2) -> gensim.models.fasttext.FastText:
+    """Pretrains and returns a FastText model
 
     Args:
         word_tokenized_corpus (list): list of tokenized sentences
@@ -28,38 +29,56 @@ def train_fasttext_embedding(word_tokenized_corpus: list, embedding_size: int = 
 
     return ft_model
 
-def save_fasttext(ft_model, filename):
-    fname = get_tmpfile(filename)
-    ft_model.save(fname)
 
-class PretrainedFastText:
-    def __init__(self, data):
-        self.wv = data
+def train_fasttext_embedding(ft_model, word_tokenized_corpus: list, epochs: int = 5) -> gensim.models.fasttext.FastText:
+    """Trains and returns a FastText model
+
+    Args:
+        ft_model: model to trian
+        word_tokenized_corpus (list): list of tokenized sentences
+        epochs (int): number of epochs to trian for
+    Returns:
+        gensim.models.fasttext.FastText: trained FastText model
+    """
+    ft_model.build_vocab(word_tokenized_corpus, update=True)
+    ft_model.train(corpus_iterable=word_tokenized_corpus,
+                   total_examples=len(word_tokenized_corpus),
+                   epochs=epochs)
+
+    return ft_model
+
+
+def save_fasttext(ft_model, filename):
+    # fname = get_tmpfile(filename)
+    ft_model.save(filename)
+
 
 def load_fasttext(filename):
-    # fname = get_tmpfile(filename)
-    if '.vec' in filename:
-        fin = io.open(filename, 'r', encoding='utf-8', newline='\n', errors='ignore')
-        n, d = map(int, fin.readline().split())
-        data = {}
-        for line in fin:
-            tokens = line.rstrip().split(' ')
-            data[tokens[0]] = map(float, tokens[1:])
-        return PretrainedFastText(data)
+    if '.bin' in filename:
+        return load_facebook_model(filename)
+    elif '.vec' in filename:
+        return load_word2vec_format(filename)
     else:
-        ft_model = FastText.load(filename)
-        return ft_model
+        return FastText.load(filename)
+
 
 def get_chunk_embeddings(ft_model: gensim.models.fasttext.FastText, chunks: list) -> list:
     avg_embs = []
     for chunk in chunks:
         avg_emb = np.zeros((300,))
         if len(chunk):
-            embs = np.stack([np.array(ft_model.wv[token]) for token in chunk])
+            embs = []
+            for token in chunk:
+                try:
+                    try:
+                        embs.append(np.array(ft_model.wv[token]))
+                    except AttributeError:
+                        embs.append(np.array(ft_model[token]))
+                except KeyError:
+                    print(f'{token} not in vocab!')
+                    continue
+            embs = np.stack(embs)
             avg_emb = np.average(embs, axis=0)
         avg_embs.append(avg_emb)
     return avg_embs
     
-            
-
-        

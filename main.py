@@ -12,12 +12,14 @@ from os.path import exists
 from sklearn.linear_model import Lasso
 
 from utils.data import load_data, get_word_tokenized_corpus, get_data_property, get_data_chunks
-from utils.embeddings import train_fasttext_embedding, get_chunk_embeddings, save_fasttext, load_fasttext
+from utils.embeddings import train_fasttext_embedding, pretrain_fasttext_embedding, get_chunk_embeddings, save_fasttext, load_fasttext
 from utils.features import get_speed, get_volume, get_circuitousness
 
 def setup_args(parser):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_name", type=str, default='fasttext_model/wiki-news-300d-1M.vec', help="File to load data from.")
+    parser.add_argument("--model_name", type=str, default='fasttext_model/wiki-news-300d-1M.vec', help="File to load model from.")
+    parser.add_argument("--train_model", action='store_true', help="Whether to train existing model on data.")
+
     parser.add_argument("--data_file", type=str, default='data/dblp-ref-0.json', help="File to load data from.")
     parser.add_argument("--chunk_embs_file", type=str, default='data/chunk_embs.txt', help="File to save/load chunks from.")
     parser.add_argument("--proj_dir", type=str, default='./saved/', help="Directory storing all data/models.")
@@ -43,14 +45,20 @@ def setup(args):
     if exists(proj_dir + args.model_name):
         print('Retrieving model...')
         ft_model = load_fasttext(proj_dir + args.model_name)
+
+        if args.train_model:
+            print('Training model...')
+            tokenized_data = get_word_tokenized_corpus(abstracts, stemmer, en_stop)
+            ft_model = train_fasttext_embedding(ft_model, tokenized_data)
+            save_fasttext(ft_model, proj_dir + args.model_name.replace('.', '-trained.'))
     else:
         # tokenize data and train fasttext model
         print('Training model...')
         tokenized_data = get_word_tokenized_corpus(abstracts, stemmer, en_stop)
-        ft_model = train_fasttext_embedding(tokenized_data) 
+        ft_model = pretrain_fasttext_embedding(tokenized_data) 
         save_fasttext(ft_model, proj_dir + args.model_name)
 
-    return args, ft_model, abstracts, citation_counts
+    return ft_model, abstracts, citation_counts
 
 
 def setup_chunk_embeddings(args, ft_model, abstracts):
