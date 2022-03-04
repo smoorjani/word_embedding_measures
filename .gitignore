@@ -1,3 +1,7 @@
-data/
-ft_model*
 *.out
+
+saved/
+data/
+
+*.ipynb_checkpoints*
+*__pycache__*

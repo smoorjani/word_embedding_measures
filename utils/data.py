@@ -1,3 +1,4 @@
+import glob
 import re
 import json
 import nltk
@@ -81,24 +82,24 @@ def load_datafile(filename: str, limit: int = -1) -> list:
 
 def load_jsondata(args):
     data = None
-    proj_dir = args['proj_dir']
-    if proj_dir + args['data_file'][-1] == '/':
+    proj_dir = args.proj_dir
+    if proj_dir + args.data_file[-1] == '/':
         data = []
-        for filename in glob.glob(proj_dir + args['data_file'] + '*.json'):
+        for filename in glob.glob(proj_dir + args.data_file + '*.json'):
             data.extend(load_datafile(filename))
     else:
-        data = load_datafile(proj_dir + args['data_file'], limit=args['limit'])
+        data = load_datafile(proj_dir + args.data_file, limit=args.limit)
     return data
 
 def load_txtdata(args):
-    with open(args['proj_dir'] + args['data_file'], 'r') as f:
+    with open(args.proj_dir + args.data_file, 'r', encoding="utf8") as f:
         data = f.readlines()
     data_dicts = [{'abstract': sent, 'n_citation': 1} for sent in data]
     return data_dicts
 
 def load_data(args):
     data = None
-    if '.json' in args['data_file'] or args['data_file'][-1] == '/':
+    if '.json' in args.data_file or args.data_file[-1] == '/':
         data = load_jsondata(args)
     else:
         data = load_txtdata(args)
