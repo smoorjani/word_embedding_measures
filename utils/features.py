@@ -1,22 +1,28 @@
 import numpy as np
 from scipy.stats.mstats import gmean
-
 from utils.algs import two_opt, get_min_vol_ellipse
 
-def get_speed(chunks_emb: list):
+def get_all_features(chunk_emb: list, volume_tolerance=0.01, circuitousness_tolerance=0.001):
+    distances, avg_speed = get_speed(chunk_emb)
+    volume = get_volume(chunk_emb, tolerance=volume_tolerance)
+    circuitousness = get_circuitousness(chunk_emb, tolerance=circuitousness_tolerance, distances=distances)
+
+    return {'speed': avg_speed, 'volume': volume, 'circuitousness': circuitousness}
+
+def get_speed(chunk_emb: list):
     """[summary]
 
     Args:
-        chunks_emb (list): [description]
+        chunk_emb (list): [description]
 
     Returns:
         [type]: [description]
     """
-    chunks_emb = chunks_emb[~np.all(chunks_emb == 0, axis=1)]
-    T = len(chunks_emb)
+    chunk_emb = chunk_emb[~np.all(chunk_emb == 0, axis=1)]
+    T = len(chunk_emb)
     distances = []
     for i in range(T - 1):
-        distance = np.linalg.norm(chunks_emb[i+1] - chunks_emb[i])
+        distance = np.linalg.norm(chunk_emb[i+1] - chunk_emb[i])
         distances.append(distance)
 
     avg_speed = sum(distances) / (T-1)
@@ -38,27 +44,27 @@ def get_volume(chunk_emb, tolerance=0.01, emb_dim=300):
     U, S, V = np.linalg.svd(A)
     return 1/gmean(np.sqrt(S))
 
-def get_circuitousness(chunks_emb: list, eps: float = 0.05):
+def get_circuitousness(chunk_emb: list, tolerance: float = 0.001, distances=None):
     """[summary]
 
     Args:
-        chunks_emb (list): [description]
+        chunk_emb (list): [description]
 
     Returns:
         [type]: [description]
     """
-    chunks_emb = chunks_emb[~np.all(chunks_emb == 0, axis=1)]
-    T = len(chunks_emb)
+    chunk_emb = chunk_emb[~np.all(chunk_emb == 0, axis=1)]
+    T = len(chunk_emb)
 
-    distances, _ = get_speed(chunks_emb)
+    if not distances:
+        distances, _ = get_speed(chunk_emb)
+    
     distance_covered = sum(distances)
-    # print(distance_covered)
 
     if T > 2:
         # do travelling salesman problem
-        route = two_opt(chunks_emb,0.001)
-        tsp = sum([np.linalg.norm(chunks_emb[route[i+1]] - chunks_emb[route[i]]) for i in range(len(route) - 1)])
-        # print(tsp)
+        route = two_opt(chunk_emb, tolerance)
+        tsp = sum([np.linalg.norm(chunk_emb[route[i+1]] - chunk_emb[route[i]]) for i in range(len(route) - 1)])
     elif T == 2:
         tsp = distance_covered
     else:

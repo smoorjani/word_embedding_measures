@@ -1,8 +1,7 @@
 import numpy as np
 
-
 ## Travelling Salesman Problem
-## Code taken from https://stackoverflow.com/questions/25585401/travelling-salesman-in-scipy
+## Code taken from https://stackoverflow.com/questions/25585401/
 # Calculate the euclidian distance in n-space of the route r traversing cities c, ending at the path start.
 path_distance = lambda r,c: np.sum([np.linalg.norm(c[r[p]]-c[r[p-1]]) for p in range(len(r))])
 # Reverse the order of all elements from element i to element k in array r.
@@ -75,3 +74,47 @@ def get_min_vol_ellipse(P, tolerance=0.01):
                     ) / d
     return A, center
 
+## Code taken from https://stackoverflow.com/questions/71196078/
+# from ortools.constraint_solver import routing_enums_pb2
+# from ortools.constraint_solver import pywrapcp
+# def tsp_ortools(points):
+#     z = np.array([[complex(*c) for c in points]])
+#     distance_matrix_pre = abs(z.T-z)
+    
+#     distance_matrix = np.floor(distance_matrix_pre*100000000).astype(int).tolist()
+    
+#     # Create the routing index manager.
+#     manager = pywrapcp.RoutingIndexManager(len(points),1,0)
+
+#     # Create Routing Model.
+#     routing = pywrapcp.RoutingModel(manager)
+
+#     def distance_callback(from_index, to_index):
+#         """Returns the distance between the two nodes."""
+#         # Convert from routing variable Index to distance matrix NodeIndex.
+#         from_node = manager.IndexToNode(from_index)
+#         to_node = manager.IndexToNode(to_index)
+#         return distance_matrix[from_node][to_node]
+
+#     transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+
+#     # Define cost of each arc.
+#     routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+    
+#     # Setting first solution heuristic.
+#     search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+#     search_parameters.first_solution_strategy = (
+#         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+    
+#     # Solve the problem.
+#     solution = routing.SolveWithParameters(search_parameters)
+    
+#     if solution:
+#         index = routing.Start(0)
+#         route = [manager.IndexToNode(index)]
+#         while not routing.IsEnd(index):
+#             index = solution.Value(routing.NextVar(index))
+#             route.append(manager.IndexToNode(index))
+#         return route
+#     raise ValueError('Solution not found!')
+    
