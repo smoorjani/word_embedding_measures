@@ -2,6 +2,7 @@ import glob
 import re
 import json
 import nltk
+import xml.etree.ElementTree as ET
 from nltk import WordPunctTokenizer
 from torch import chunk
 
@@ -99,9 +100,55 @@ def load_txtdata(args):
 
 def load_data(args):
     data = None
-    if '.json' in args.data_file or args.data_file[-1] == '/':
+    if '.xml' in args.data_file or (args.data_file[-1] == '/' and args.data_file_type == 'xml'):
+        print('Loading XML...')
+        data = get_persuasive_pairs_xml(args.data_file)
+    elif '.json' in args.data_file or (args.data_file[-1] == '/' and args.data_file_type == 'json'):
+        print('Loading JSON...')
         data = load_jsondata(args)
     else:
+        print('Loading TXT...')
         data = load_txtdata(args)
     return data
 
+'''
+Loading Data from 16k persuasiveness dataset and IMDB Corpus
+'''
+def get_persuasive_pairs_xml(directory: str = '../persuasive_classifier/16k_persuasiveness/data/UKPConvArg1Strict-XML/'):
+    '''
+    Extracts and compiles the 16k persuasiveness pairs from a directory containing XML files
+
+    Args:
+        directory (str): directory to 16k persuasive pairs folder with XML files
+    Returns:
+        a list of dictionaries with both sentences and the label
+    '''
+    data = []
+
+    for filename in glob.glob(directory + '*.xml'):
+        root = ET.parse(filename).getroot()
+
+        argument_pairs = [type_tag for type_tag in root.findall(
+            'annotatedArgumentPair')]
+
+        for argument_pair in argument_pairs:
+            sentence_a = argument_pair.find('arg1/text').text
+            sentence_b = argument_pair.find('arg2/text').text
+
+            labels = [type_tag.find('value').text for type_tag in argument_pair.findall(
+                'mTurkAssignments/mTurkAssignment')]
+
+            label = max(labels, key=labels.count)
+            confidence = labels.count(label)/len(labels)
+
+            # labels should be 0 and 1 if no equal arguments
+            label = int(label[-1]) - 1 if 'equal' not in label else 0
+            if not label:
+                continue
+
+            # row = {'label': label, 'sentence_a': sentence_a, 'sentence_b': sentence_b, 'confidence': confidence}
+            sentence = sentence_a if not label else sentence_b
+            row = {'abstract': sentence, 'n_citation': confidence}
+            data.append(row)
+
+    return data

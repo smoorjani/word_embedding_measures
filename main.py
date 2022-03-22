@@ -11,6 +11,7 @@ import numpy as np
 from os.path import exists
 from collections import defaultdict
 from sklearn.linear_model import Lasso
+import matplotlib.pyplot as plt
 
 from utils.data import load_data, get_word_tokenized_corpus, get_data_property, get_data_chunks
 from utils.embeddings import train_fasttext_embedding, pretrain_fasttext_embedding, get_chunk_embeddings, save_fasttext, load_fasttext
@@ -21,7 +22,8 @@ def setup_args():
     parser.add_argument("--model_name", type=str, default='fasttext_model/wiki-news-300d-1M.vec', help="File to load model from.")
     parser.add_argument("--train_model", action='store_true', help="Whether to train existing model on data.")
 
-    parser.add_argument("--data_file", type=str, default='data/dblp-ref-0.json', help="File to load data from.")
+    parser.add_argument("--data_file", type=str, default='data/dblp-ref-0.json', help="File/directory to load data from.")
+    parser.add_argument("--data_file_type", type=str, help="If a directory is provided as the datafile, provide type to read")
     parser.add_argument("--chunk_embs_file", type=str, default='data/chunk_embs.txt', help="File to save/load chunks from.")
     parser.add_argument("--proj_dir", type=str, default='./saved/', help="Directory storing all data/models.")
 
@@ -29,6 +31,9 @@ def setup_args():
     # TODO: allow user to create chunks based on length (e.g. I want a chunk to be a sentence or I want a chunk to be 5 tokens)
     parser.add_argument("--T", type=int, default=20, help="Number of chunks to make")
     args = parser.parse_args()
+
+    if args.data_file[-1] == '/':
+        assert args.data_file_type is not None
     return args
     
 
@@ -51,7 +56,7 @@ def setup(args):
             print('Training model...')
             tokenized_data = get_word_tokenized_corpus(abstracts, stemmer, en_stop)
             ft_model = train_fasttext_embedding(ft_model, tokenized_data)
-            save_fasttext(ft_model, proj_dir + args.model_name.replace('.', '-trained.'))
+            save_fasttext(ft_model, proj_dir + args.model_name.replace('.bin', '-trained.bin'))
     else:
         # tokenize data and train fasttext model
         print('Training model...')
@@ -68,7 +73,8 @@ def setup_chunk_embeddings(args, ft_model, abstracts):
         print('Loading chunk embeddings...')
         with open(args.proj_dir + args.chunk_embs_file, 'r+') as f:
             shape = tuple(map(int, f.readline()[1:].split(',')))
-            chunk_embs = np.loadtxt(f, skiprows=0, delimiter=',', max_rows=args.limit * args.T).reshape(args.limit, shape[1], shape[2])
+            limit = min(shape[0], args.limit)
+            chunk_embs = np.loadtxt(f, skiprows=0, delimiter=',', max_rows=limit * args.T).reshape(limit, shape[1], shape[2])
     else:
         # should be of size [# abstracts, T, len(abstract)/T]
         print('Chunking abstracts...')
@@ -76,7 +82,7 @@ def setup_chunk_embeddings(args, ft_model, abstracts):
         chunk_embs = np.array([get_chunk_embeddings(ft_model, chunk) for chunk in chunks])
 
         header = ','.join(map(str, chunk_embs.shape))
-        np.savetxt(args.proj_dir + 'test.txt', chunk_embs.reshape(-1, chunk_embs.shape[-1]), header=header, delimiter=',')
+        np.savetxt(args.proj_dir + args.chunk_embs_file, chunk_embs.reshape(-1, chunk_embs.shape[-1]), header=header, delimiter=',')
 
     return chunk_embs
 
@@ -101,16 +107,25 @@ if __name__ == "__main__":
         for k, v in d.items():
             features_dict[k].append(v)
 
+    for i, l in enumerate(features_dict['distances']):
+        # print(len(l))
+        for j in range(args.T - 1 - len(l)):
+            l.append(np.nan)
+            
+    avg_distances = np.nanmean(np.array(features_dict['distances']), axis=0, dtype='float32')
+    plt.plot(list(range(args.T-1)), avg_distances)
+    plt.savefig('distances.png') 
+
     print('Getting coefficients...')
     for key, value in features_dict.items():
+        if key == 'distances':
+            continue
         clf = Lasso(alpha=0.1)
         nan_vals = np.argwhere(np.isnan(value))
 
-        non_nan_citations = np.delete(np.array(citation_counts), nan_vals).reshape(-1, 1)
-        non_nan_vals = np.delete(value, nan_vals)
-
-        print(non_nan_citations, non_nan_vals)
+        non_nan_citations = np.log(1 + np.delete(np.array(citation_counts), nan_vals).reshape(-1, 1))
+        non_nan_vals = np.log(np.delete(value, nan_vals))
 
         clf.fit(non_nan_citations, non_nan_vals)
-        print(f'{key} coeff {clf.coef_}')
+        print(f'{key} coeff {clf.coef_} mean {np.mean(non_nan_vals)}')
 

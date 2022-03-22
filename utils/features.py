@@ -7,7 +7,7 @@ def get_all_features(chunk_emb: list, volume_tolerance=0.01, circuitousness_tole
     volume = get_volume(chunk_emb, tolerance=volume_tolerance)
     circuitousness = get_circuitousness(chunk_emb, tolerance=circuitousness_tolerance, distances=distances)
 
-    return {'speed': avg_speed, 'volume': volume, 'circuitousness': circuitousness}
+    return {'speed': avg_speed, 'volume': volume, 'circuitousness': circuitousness, 'distances': distances}
 
 def get_speed(chunk_emb: list):
     """[summary]
