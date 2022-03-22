@@ -17,7 +17,8 @@ import matplotlib.pyplot as plt
 
 from utils.data import load_data, get_word_tokenized_corpus, get_data_property, get_data_chunks
 from utils.embeddings import train_fasttext_embedding, pretrain_fasttext_embedding, get_chunk_embeddings, save_fasttext, load_fasttext
-from utils.features import get_speed, get_volume, get_circuitousness, get_all_features
+from utils.features import get_features
+from utils.controls import get_controls
 
 def setup_args():
     parser = argparse.ArgumentParser()
@@ -96,8 +97,6 @@ if __name__ == "__main__":
     if exists(args.proj_dir + args.chunk_embs_file):
         print('Found existing chunks, loading data...')
         data = load_data(args)
-        abstracts = get_data_property(data, "abstract")
-        citation_counts = get_data_property(data, "n_citation")
         chunk_embs = setup_chunk_embeddings(args, None, None)
     else:
         print('No existing chunks, calling setup...')
@@ -105,15 +104,11 @@ if __name__ == "__main__":
         abstracts = get_data_property(data, "abstract")
         chunk_embs = setup_chunk_embeddings(args, ft_model, abstracts)
 
-    
     citation_counts = get_data_property(data, "n_citation")
+    controls = get_controls(data)
 
-    # additional controls
-    years = get_data_property(data, "year")
-    venues = get_data_property(data, "venue")
-    
     print('Getting features...')
-    features = [get_all_features(chunk_emb) for chunk_emb in chunk_embs]
+    features = [get_features(chunk_emb) for chunk_emb in chunk_embs]
     features_dict = defaultdict(list)
 
     for d in features:
@@ -136,9 +131,11 @@ if __name__ == "__main__":
         clf = Lasso(alpha=0.1)
         nan_vals = np.argwhere(np.isnan(value))
 
-        non_nan_citations = np.log(1 + np.delete(np.array(citation_counts), nan_vals).reshape(-1, 1))
-        non_nan_vals = np.log(np.delete(value, nan_vals))
+        controls = np.delete(controls, nan_vals, axis=0)
+        non_nan_citations = np.log(1 + np.delete(np.array(citation_counts), nan_vals))
+        non_nan_vals = np.log(np.delete(value, nan_vals)).reshape(-1, 1)
+        dependent_vars = np.concatenate((non_nan_vals, controls), axis=1)
 
-        clf.fit(non_nan_citations, non_nan_vals)
+        clf.fit(controls, non_nan_citations)
         print(f'{key} coeff {clf.coef_} mean {np.mean(non_nan_vals)}')
 
