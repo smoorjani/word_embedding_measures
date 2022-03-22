@@ -115,8 +115,8 @@ if __name__ == "__main__":
         for k, v in d.items():
             features_dict[k].append(v)
 
+    # if there is a missing value at the end of distances (sometimes there are only T-1 chunks)
     for i, l in enumerate(features_dict['distances']):
-        # print(len(l))
         for j in range(args.T - 1 - len(l)):
             l.append(np.nan)
             
@@ -129,6 +129,7 @@ if __name__ == "__main__":
         if key == 'distances':
             continue
         clf = Lasso(alpha=0.1)
+        # remove rows with invalid values
         nan_vals = np.argwhere(np.isnan(value))
 
         controls = np.delete(controls, nan_vals, axis=0)
