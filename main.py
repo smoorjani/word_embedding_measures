@@ -1,3 +1,5 @@
+#test
+
 import nltk
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
@@ -44,8 +46,6 @@ def setup(args):
 
     print('Loading data...')
     data = load_data(args)
-    abstracts = get_data_property(data, "abstract")
-    citation_counts = get_data_property(data, "n_citation")
 
     ft_model = None
     if exists(proj_dir + args.model_name):
@@ -64,7 +64,7 @@ def setup(args):
         ft_model = pretrain_fasttext_embedding(tokenized_data) 
         save_fasttext(ft_model, proj_dir + args.model_name)
 
-    return ft_model, abstracts, citation_counts
+    return ft_model, data
 
 
 def setup_chunk_embeddings(args, ft_model, abstracts):
@@ -88,6 +88,11 @@ def setup_chunk_embeddings(args, ft_model, abstracts):
 
 if __name__ == "__main__":
     args = setup_args()
+
+    # additional properties I want from the data
+    strict_loading_list = ['year', 'venue']
+    args.strict_loading_list = strict_loading_list
+
     if exists(args.proj_dir + args.chunk_embs_file):
         print('Found existing chunks, loading data...')
         data = load_data(args)
@@ -96,8 +101,16 @@ if __name__ == "__main__":
         chunk_embs = setup_chunk_embeddings(args, None, None)
     else:
         print('No existing chunks, calling setup...')
-        ft_model, abstracts, citation_counts = setup(args)
+        ft_model, data = setup(args)
+        abstracts = get_data_property(data, "abstract")
         chunk_embs = setup_chunk_embeddings(args, ft_model, abstracts)
+
+    
+    citation_counts = get_data_property(data, "n_citation")
+
+    # additional controls
+    years = get_data_property(data, "year")
+    venues = get_data_property(data, "venue")
     
     print('Getting features...')
     features = [get_all_features(chunk_emb) for chunk_emb in chunk_embs]
