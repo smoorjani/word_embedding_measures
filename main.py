@@ -91,7 +91,7 @@ if __name__ == "__main__":
     args = setup_args()
 
     # additional properties I want from the data
-    strict_loading_list = ['year', 'venue']
+    strict_loading_list = ['abstract', 'n_citation', 'year', 'venue']
     args.strict_loading_list = strict_loading_list
 
     if exists(args.proj_dir + args.chunk_embs_file):

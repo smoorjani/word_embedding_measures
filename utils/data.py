@@ -48,7 +48,7 @@ def get_word_tokenized_corpus(abstracts: list, stemmer: nltk.stem.WordNetLemmati
 '''
 Interacting with Data Dicts
 '''
-def get_data_property(data: list, property: str = ABSTRACT) -> list:
+def get_data_property(data: list, prop: str = ABSTRACT) -> list:
     """Gets a specific property from a dataset of JSONs
 
     Args:
@@ -59,14 +59,16 @@ def get_data_property(data: list, property: str = ABSTRACT) -> list:
         list: list of the requested property
     """
     try:
-        return [d[property] for d in data]
+        return [d[prop] for d in data]
     except KeyError:
+        print('Missing key!')
         properties = []
         for d in data:
-            if property in d:
-                properties.append(d[property])
+            if prop in d:
+                properties.append(d[prop])
             else:
                 properties.append(None)
+        return properties
 
 def get_data_chunks(abstract: str, T: int = 20) -> list:
     tokens = abstract.split(" ")
@@ -94,14 +96,12 @@ def load_datafile(filename: str, limit: int = -1, strict_loading_list=BASE_PROPE
     for d in data_dicts:
         # checks to see that all required properties are in the data
         missing_property = False
-        for property in strict_loading_list:
-            if property not in d:
+        for p in strict_loading_list:
+            if p not in d:
                 missing_property = True
         
-        if missing_property:
-            continue
-
-        valid_data_dicts.append(d)
+        if not missing_property:
+            valid_data_dicts.append(d)
 
 
     if limit > 0:

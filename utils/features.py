@@ -52,6 +52,7 @@ def get_speed2(chunk_emb: list, tolerance: float = 0.01, emb_dim: int = 300):
         [type]: [description]
     """
     chunk_emb = chunk_emb[~np.all(chunk_emb == 0, axis=1)]
+    print(chunk_emb.shape)
     T = len(chunk_emb)
     speed2s = []
     logsumspeed2 = 0
@@ -59,10 +60,14 @@ def get_speed2(chunk_emb: list, tolerance: float = 0.01, emb_dim: int = 300):
     for i in range(T - 1):
         rank = np.linalg.matrix_rank(chunk_emb, tolerance)     
         if rank < emb_dim or (rank == emb_dim and chunk_emb[i].shape[0] <= emb_dim):
-            tempA = chunk_emb[1:i,:].transpose() - chunk_emb[0,:].transpose().reshape(-1, 1) @ np.ones((1,chunk_emb[i].shape[0] - 1))
+            print(chunk_emb[1:(i+2), :].shape, chunk_emb[0,:].shape, chunk_emb[i].shape[0])
+            tempA = chunk_emb[1:(i+2),:].transpose() - chunk_emb[0,:].transpose().reshape(-1, 1) @ np.ones((1,chunk_emb[i].shape[0] - 1))
+            print(tempA.shape)
             U, S, _ = np.linalg.svd(tempA)
             S1 = U[:,:rank-1]
+            print(S1.shape)
             tempP = np.vstack([(S1.transpose() @ tempA).transpose(), np.zeros((1, rank-1))])
+            print(tempP.shape)
             A, _ = get_min_vol_ellipse(tempP)
         else:
             A, _ = get_min_vol_ellipse(chunk_emb)
