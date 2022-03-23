@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats.mstats import gmean
 from utils.algs import two_opt, get_min_vol_ellipse
 
-def get_features(chunk_emb: list, feature_list: list = ['speed', 'volume', 'circuitousness', 'distances', 'speed2'], volume_tolerance=0.01, circuitousness_tolerance=0.001):
+def get_features(chunk_emb: list, feature_list: list = ['speed', 'volume', 'circuitousness', 'distances'], volume_tolerance=0.01, circuitousness_tolerance=0.001):
     features_dict = {}
     distances = []
     for feature in feature_list:
@@ -19,6 +19,11 @@ def get_features(chunk_emb: list, feature_list: list = ['speed', 'volume', 'circ
             if not len(distances):
                 distances, _ = get_speed(chunk_emb)
             feature_val = get_circuitousness(chunk_emb, tolerance=circuitousness_tolerance, distances=distances)
+
+        elif feature.lower() == 'distances':
+            if not len(distances):
+                distances, _ = get_speed(chunk_emb)
+            feature_val = distances
 
         features_dict[feature] = feature_val
     return features_dict
