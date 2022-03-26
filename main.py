@@ -128,7 +128,7 @@ if __name__ == "__main__":
     for key, value in features_dict.items():
         if key == 'distances':
             continue
-        clf = Lasso(alpha=0.1)
+        clf = Lasso(alpha=0.01)
         # remove rows with invalid values
         nan_vals = np.argwhere(np.isnan(value))
 
@@ -136,7 +136,7 @@ if __name__ == "__main__":
         non_nan_citations = np.log(1 + np.delete(np.array(citation_counts), nan_vals))
         non_nan_vals = np.log(np.delete(value, nan_vals)).reshape(-1, 1)
         dependent_vars = np.concatenate((non_nan_vals, controls), axis=1)
-
-        clf.fit(controls, non_nan_citations)
+        #print(non_nan_vals, non_nan_citations)
+        clf.fit(dependent_vars, non_nan_citations)
         print(f'{key} coeff {clf.coef_} mean {np.mean(non_nan_vals)}')
 
