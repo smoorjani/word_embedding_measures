@@ -1,4 +1,4 @@
-﻿# word_embedding_measures
+﻿# Word Embedding Measures
 
 Python implementation of "How quantifying the shape of stories predicts their success" by Toubia et al. This repository is intended for academic abstracts but can easily be generalized to other domains, including those used in the paper (e.g. movies). **This is not my paper.** You can find it [here](https://www.pnas.org/content/118/26/e2011695118.short?rss=1).
 
