@@ -1,7 +1,18 @@
 import numpy as np
+from typing import List, Dict
 from utils.data import get_data_property
 
-def get_controls(data):
+def get_controls(data: List[Dict]) -> np.ndarray:
+    """Creates controls for the regression coefficients.
+    Note that you should add as many controls as possible.
+    This is a relatively small set of controls meant for academic papers from the AMiner dataset.
+
+    Args:
+        data (List[Dict]): list of JSON objects containing all relevant data
+
+    Returns:
+        np.ndarray: controls stored in a numpy array
+    """
     controls = []
     abstracts = get_data_property(data, "abstract")
 

@@ -1,13 +1,11 @@
-import io
 import numpy as np
 
 import gensim
-from gensim.test.utils import get_tmpfile, datapath
-from gensim.models.fasttext import FastText, load_facebook_vectors, load_facebook_model 
+from gensim.models.fasttext import FastText, load_facebook_model 
 from gensim.models.keyedvectors import load_word2vec_format
 
 def pretrain_fasttext_embedding(word_tokenized_corpus: list, embedding_size: int = 300, window_size: int = 40, min_word: int = 3, down_sampling: float = 1e-2) -> gensim.models.fasttext.FastText:
-    """Pretrains and returns a FastText model
+    """Pretrains and returns a FastText model. Note that this method is NOT preferred to loading in a pretrained model and fine-tuning it.
 
     Args:
         word_tokenized_corpus (list): list of tokenized sentences
@@ -31,7 +29,8 @@ def pretrain_fasttext_embedding(word_tokenized_corpus: list, embedding_size: int
 
 
 def train_fasttext_embedding(ft_model, word_tokenized_corpus: list, epochs: int = 5) -> gensim.models.fasttext.FastText:
-    """Trains and returns a FastText model
+    """Trains and returns a pre-trained FastText model
+    This should be used when you are using data that may contain out of vocabulary words!
 
     Args:
         ft_model: model to trian
@@ -48,12 +47,27 @@ def train_fasttext_embedding(ft_model, word_tokenized_corpus: list, epochs: int 
     return ft_model
 
 
-def save_fasttext(ft_model, filename):
-    # fname = get_tmpfile(filename)
+def save_fasttext(ft_model: gensim.models.fasttext.FastText, filename: str):
+    """Saves the current fasttext model
+
+    Args:
+        ft_model (gensim.models.fasttext.FastText): fasttext model
+        filename (str): file to save to
+    """
     ft_model.save(filename)
 
 
-def load_fasttext(filename):
+def load_fasttext(filename) -> gensim.models.fasttext.FastText:
+    """Loads the specified fasttext model.
+    Note that you should load a .bin model for any model you wish to train.
+    If you plan to use a FastText model out of box, a .vec model will suffice.
+    You can download pretrained models here: https://fasttext.cc/docs/en/english-vectors.html
+
+    Args:
+        filename (str): file to laod from
+    Returns:
+        gensim.models.fasttext.FastText: returns fasttext model
+    """
     if '.bin' in filename:
         return load_facebook_model(filename)
     elif '.vec' in filename:
@@ -63,6 +77,15 @@ def load_fasttext(filename):
 
 
 def get_chunk_embeddings(ft_model: gensim.models.fasttext.FastText, chunks: list) -> list:
+    """Gets the chunk embeddings for each chunk. It gets the embedding of every word in the a chunk and averages the embeddings.
+
+    Args:
+        ft_model (gensim.models.fasttext.FastText): fasttext model
+        chunks (list): list of chunks
+
+    Returns:
+        list: list of averaged chunk embeddings.
+    """
     avg_embs = []
     for chunk in chunks:
         avg_emb = np.zeros((300,))

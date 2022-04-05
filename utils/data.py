@@ -1,8 +1,11 @@
-from email.policy import strict
-import glob
 import re
-import json
+import glob
 import nltk
+import json
+
+import argparse
+from typing import Dict, List
+
 import xml.etree.ElementTree as ET
 from nltk import WordPunctTokenizer
 
@@ -12,6 +15,16 @@ BASE_PROPERTY_LIST = [ABSTRACT, N_CITATION]
 
 
 def preprocess_text(document: str, stemmer: nltk.stem.WordNetLemmatizer, en_stop: set) -> str:
+    """Preprocesses a document to remove special characters/whitespace/etc
+
+    Args:
+        document (str): 
+        stemmer (nltk.stem.WordNetLemmatizer): Stemmer from NLTK
+        en_stop (set): Set of stop words, usually from NLTK
+
+    Returns:
+        str: preprocessed document
+    """
     # Remove all the special characters
     document = re.sub(r'\W', ' ', str(document))
 
@@ -40,19 +53,34 @@ def preprocess_text(document: str, stemmer: nltk.stem.WordNetLemmatizer, en_stop
 
     return preprocessed_text
 
-def get_word_tokenized_corpus(abstracts: list, stemmer: nltk.stem.WordNetLemmatizer, en_stop: set) -> list:
-    final_corpus = [preprocess_text(abstract, stemmer, en_stop) for abstract in abstracts if abstract.strip() !='']
+
+def get_word_tokenized_corpus(documents: list, stemmer: nltk.stem.WordNetLemmatizer, en_stop: set) -> list:
+    """Preprocesses and runs tokenization on a corpus of text
+
+    Args:
+        documents (list): list of documents
+        stemmer (nltk.stem.WordNetLemmatizer): NLTK stemmer for tokenization
+        en_stop (set): Set of stop words, usually from NLTK
+
+    Returns:
+        list: list of documents
+    """
+    final_corpus = [preprocess_text(abstract, stemmer, en_stop)
+                    for abstract in documents if abstract.strip() != '']
     word_punctuation_tokenizer = WordPunctTokenizer()
     return [word_punctuation_tokenizer.tokenize(sent) for sent in final_corpus]
+
 
 '''
 Interacting with Data Dicts
 '''
-def get_data_property(data: list, prop: str = ABSTRACT) -> list:
+
+
+def get_data_property(data: List[Dict], prop: str = ABSTRACT) -> list:
     """Gets a specific property from a dataset of JSONs
 
     Args:
-        data (list): list of json objects
+        data (List[Dict]): list of json objects
         property (str, optional): property to extract. Can use "abstract" or "n_citation". Defaults to "abstract".
 
     Returns:
@@ -70,10 +98,20 @@ def get_data_property(data: list, prop: str = ABSTRACT) -> list:
                 properties.append(None)
         return properties
 
-def get_data_chunks(abstract: str, T: int = 20) -> list:
-    tokens = abstract.split(" ")
+
+def get_data_chunks(document: str, T: int = 20) -> list:
+    """Chunks the document into T chunks. Note that in some cases, it may be T=19.
+
+    Args:
+        document (str): 
+        T (int, optional): Number of desired chunks. Defaults to 20.
+
+    Returns:
+        list: list of T chunks composing the entire document
+    """
+    tokens = document.split(" ")
     chunk_len = len(tokens) / T
-    
+
     chunks = []
     for i in range(T):
         min_idx = int(i * chunk_len)
@@ -83,10 +121,23 @@ def get_data_chunks(abstract: str, T: int = 20) -> list:
 
     return chunks
 
+
 '''
 Loading Data from Files
 '''
-def load_datafile(filename: str, limit: int = -1, strict_loading_list=BASE_PROPERTY_LIST) -> list:
+
+
+def load_datafile(filename: str, limit: int = -1, strict_loading_list: list = BASE_PROPERTY_LIST) -> List[Dict]:
+    """_summary_
+
+    Args:
+        filename (str): file to load in
+        limit (int, optional): number of files to include (minimum of len(documents) and limit). Defaults to -1.
+        strict_loading_list (list, optional): list of attributes to be loaded. If they are not present, do not include the sample. Defaults to BASE_PROPERTY_LIST
+
+    Returns:
+        List[Dict]: list of dictionaries storing information regarding the documents from the JSON file
+    """
     with open(filename, 'r') as f:
         data = f.readlines()
 
@@ -99,38 +150,74 @@ def load_datafile(filename: str, limit: int = -1, strict_loading_list=BASE_PROPE
         for p in strict_loading_list:
             if p not in d:
                 missing_property = True
-        
+
         if not missing_property:
             valid_data_dicts.append(d)
-
 
     if limit > 0:
         return valid_data_dicts[:limit]
     return valid_data_dicts
 
-def load_jsondata(args, strict_loading_list=BASE_PROPERTY_LIST):
+
+def load_jsondata(args: argparse.Namespace, strict_loading_list: list = BASE_PROPERTY_LIST) -> List[Dict]:
+    """Loads either a single JSON file or directory of JSON files
+
+    Args:
+        args(argparse.Namespace): argparser object (see main function)
+        strict_loading_list (list, optional): list of attributes to be loaded. If they are not present, do not include the sample. Defaults to BASE_PROPERTY_LIST.
+
+    Returns:
+        List[Dict]: list of dictionaries storing information regarding the documents from the JSON file(s)
+    """
     data = None
     proj_dir = args.proj_dir
     if proj_dir + args.data_file[-1] == '/':
         data = []
         for filename in glob.glob(proj_dir + args.data_file + '*.json'):
-            data.extend(load_datafile(filename, strict_loading_list=strict_loading_list))
+            data.extend(load_datafile(
+                filename, strict_loading_list=strict_loading_list))
     else:
-        data = load_datafile(proj_dir + args.data_file, limit=args.limit, strict_loading_list=strict_loading_list)
+        data = load_datafile(proj_dir + args.data_file,
+                             limit=args.limit, strict_loading_list=strict_loading_list)
     return data
 
-def load_txtdata(args, strict_loading_list=BASE_PROPERTY_LIST):
+
+def load_txtdata(args: argparse.Namespace, strict_loading_list: list = BASE_PROPERTY_LIST) -> List[Dict]:
+    """Loads in data from a TXT file. IMPORTANT: this is not meant to be used directly, only for testing purposes.
+    If you wish to load data from a TXt file, please adapt this function properly.
+
+    Args:
+        args(argparse.Namespace): argparser object (see main function)
+        strict_loading_list (list, optional): list of attributes to be loaded. If they are not present, do not include the sample. Defaults to BASE_PROPERTY_LIST.
+
+    Raises:
+        NotImplementedError: This function is meant for a naive case. Please adapt it for your own use case.
+
+    Returns:
+        List[Dict]: list of dictionaries storing information regarding the document
+    """
     with open(args.proj_dir + args.data_file, 'r', encoding="utf8") as f:
         data = f.readlines()
 
     if ABSTRACT in strict_loading_list and N_CITATION in strict_loading_list:
-        data_dicts = [{ABSTRACT: sent, N_CITATION: 1} for sent in data]
+        data_dicts = [{ABSTRACT: sent.split()[0], N_CITATION: 1}
+                      for sent in data]
     else:
-        raise NotImplementedError('This feature is not ready. Please adapt the source code to your use case!')
+        raise NotImplementedError(
+            'This feature is not ready. Please adapt the source code to your use case!')
 
     return data_dicts
 
-def load_data(args):
+
+def load_data(args: argparse.Namespace) -> List[Dict]:
+    """Wrapper method to handle data loading. Please add your own function here to handle special data types.
+
+    Args:
+        args(argparse.Namespace): argparser object (see main function)
+
+    Returns:
+        List[Dict]: list of dictionaries storing information regarding the document
+    """
     strict_loading_list = args.strict_loading_list if args.strict_loading_list else BASE_PROPERTY_LIST
 
     data = None
@@ -145,17 +232,21 @@ def load_data(args):
         data = load_txtdata(args, strict_loading_list=strict_loading_list)
     return data
 
+
 '''
-Loading Data from 16k persuasiveness dataset and IMDB Corpus
+Loading Data from 16k persuasiveness dataset.
+This is specific to our own use case. You can ignore this.
 '''
-def get_persuasive_pairs_xml(directory: str = '../persuasive_classifier/16k_persuasiveness/data/UKPConvArg1Strict-XML/'):
+
+
+def get_persuasive_pairs_xml(directory: str = '../persuasive_classifier/16k_persuasiveness/data/UKPConvArg1Strict-XML/') -> List[Dict]:
     '''
     Extracts and compiles the 16k persuasiveness pairs from a directory containing XML files
 
     Args:
         directory (str): directory to 16k persuasive pairs folder with XML files
     Returns:
-        a list of dictionaries with both sentences and the label
+        List[Dict]: a list of dictionaries with both sentences and the label
     '''
     data = []
 
