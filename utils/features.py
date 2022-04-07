@@ -39,7 +39,7 @@ def get_features(chunk_emb: list, feature_list: list = ['speed', 'volume', 'circ
         features_dict[feature] = feature_val
     return features_dict
 
-def get_speed(chunk_emb: list) -> tuple[list, float]:
+def get_speed(chunk_emb: list) -> tuple:
     """Gets the distances and speed of the chunk embeddings.
 
     Args:
