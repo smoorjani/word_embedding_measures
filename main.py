@@ -33,7 +33,7 @@ def setup_args() -> argparse.Namespace:
     parser.add_argument("--data_file", type=str, default='data/dblp-ref-0.json', help="File/directory to load data from.")
     parser.add_argument("--data_file_type", type=str, help="If a directory is provided as the datafile, provide type to read")
     parser.add_argument("--chunk_embs_file", type=str, default='data/chunk_embs.txt', help="File to save/load chunks from.")
-    parser.add_argument("--proj_dir", type=str, default='./saved/', help="Directory storing all data/models.")
+    parser.add_argument("--proj_dir", type=str, default='./word_embedding_measures/', help="Directory storing all data/models.")
 
     parser.add_argument("--limit", type=int, default=30000, help="Number of documents to train on")
     # TODO: allow user to create chunks based on length (e.g. I want a chunk to be a sentence or I want a chunk to be 5 tokens)
@@ -45,7 +45,7 @@ def setup_args() -> argparse.Namespace:
     return args
     
 
-def setup(args: argparse.Namespace) -> tuple[gensim.models.fasttext.FastText, List[Dict]]:
+def setup(args: argparse.Namespace) -> tuple:
     """Sets up the FastText model (either training or just loading) and 
     loads in and preprocesses the data.
 
@@ -144,6 +144,13 @@ if __name__ == "__main__":
     for d in features:
         for k, v in d.items():
             features_dict[k].append(v)
+
+    '''
+    for key, value in features_dict.items():
+        print(key)
+        print(value)
+        print('-'*100)
+    '''
 
     # if there is a missing value at the end of distances (sometimes there are only T-1 chunks)
     for i, l in enumerate(features_dict['distances']):

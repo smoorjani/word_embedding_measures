@@ -185,12 +185,10 @@ dependencies:
   - navigator-updater=0.2.1=py38_0
   - nbclassic=0.2.6=pyhd3eb1b0_0
   - nbclient=0.5.3=pyhd3eb1b0_0
-  - nbconvert=6.0.7=py38_0
   - nbformat=5.1.3=pyhd3eb1b0_0
   - ncurses=6.2=he6710b0_1
   - nest-asyncio=1.5.1=pyhd3eb1b0_0
   - networkx=2.5=py_0
-  - nltk=pyhd3eb1b0_0
   - nose=1.3.7=pyhd3eb1b0_1006
   - notebook=6.3.0=py38h06a4308_0
   - numba=0.53.1=py38ha9443f7_0
@@ -310,7 +308,6 @@ dependencies:
   - textdistance=4.2.1=pyhd3eb1b0_0
   - threadpoolctl=2.1.0=pyh5ca1d4c_0
   - three-merge=0.1.1=pyhd3eb1b0_0
-  - tifffile=2020.10.1=py38hdd07704_2
   - tk=8.6.10=hbc83047_0
   - toml=0.10.2=pyhd3eb1b0_0
   - toolz=0.11.1=pyhd3eb1b0_0
@@ -367,5 +364,4 @@ dependencies:
     - smart-open==5.2.1
     - xxhash==3.0.0
     - yarl==1.7.2
-prefix: /home/smoorjani/anaconda3
-~                                       
+prefix: /home/smoorjani/anaconda3                                    

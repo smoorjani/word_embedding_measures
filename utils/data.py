@@ -8,6 +8,7 @@ from typing import Dict, List
 
 import xml.etree.ElementTree as ET
 from nltk import WordPunctTokenizer
+from nltk.tokenize import word_tokenize
 
 ABSTRACT = 'abstract'
 N_CITATION = 'n_citation'
@@ -99,18 +100,24 @@ def get_data_property(data: List[Dict], prop: str = ABSTRACT) -> list:
         return properties
 
 
-def get_data_chunks(document: str, T: int = 20) -> list:
+def get_data_chunks(document: str, T: int = 20, chunk_len: int = 5, mode: str = 'T') -> list:
     """Chunks the document into T chunks. Note that in some cases, it may be T=19.
 
     Args:
         document (str): 
         T (int, optional): Number of desired chunks. Defaults to 20.
+        chunk_len (int, optional): Length of desired chunks. Defaults to 5.
+        mode (str, optional): Whether to use T or chunk_len for calculations. Defaults to 'T'.
 
     Returns:
         list: list of T chunks composing the entire document
     """
-    tokens = document.split(" ")
-    chunk_len = len(tokens) / T
+    # tokens = document.split(" ")
+    tokens = word_tokenize(document)
+    if mode == 'T':
+        chunk_len = len(tokens) / T
+    elif mode == 'chunk_len':
+        T = (len(tokens) - 1) // chunk_len + 1
 
     chunks = []
     for i in range(T):
@@ -200,7 +207,7 @@ def load_txtdata(args: argparse.Namespace, strict_loading_list: list = BASE_PROP
         data = f.readlines()
 
     if ABSTRACT in strict_loading_list and N_CITATION in strict_loading_list:
-        data_dicts = [{ABSTRACT: sent.split()[0], N_CITATION: 1}
+        data_dicts = [{ABSTRACT: sent, N_CITATION: 1}
                       for sent in data]
     else:
         raise NotImplementedError(
