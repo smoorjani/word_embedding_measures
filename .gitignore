@@ -2,6 +2,7 @@
 *.job
 
 saved/
+yelp_saved/
 data/
 
 *.ipynb_checkpoints*

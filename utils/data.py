@@ -4,6 +4,7 @@ import nltk
 import json
 
 import argparse
+import contractions
 from typing import Dict, List
 
 import xml.etree.ElementTree as ET
@@ -41,13 +42,31 @@ def preprocess_text(document: str, stemmer: nltk.stem.WordNetLemmatizer, en_stop
     # Removing prefixed 'b'
     document = re.sub(r'^b\s+', '', document)
 
+    # Removing punctuation
+    document = re.sub(r'[%s]' % re.escape(string.punctuation), '' , document)
+
+    # Removing digits
+    document = re.sub(r'W*dw*', '', document.lower())
+
     # Converting to Lowercase
     document = document.lower()
+
+    # expanding contractions
+    expanded_words = []   
+    for word in document.split():
+        # using contractions.fix to expand the shortened words
+        expanded_words.append(contractions.fix(word))  
+
+    document = ' '.join(expanded_words)
+
 
     # Lemmatization
     tokens = document.split()
     tokens = [stemmer.lemmatize(word) for word in tokens]
+
+    # remove stop words 
     tokens = [word for word in tokens if word not in en_stop]
+    # remove too short words
     tokens = [word for word in tokens if len(word) > 3]
 
     preprocessed_text = ' '.join(tokens)
@@ -68,6 +87,7 @@ def get_word_tokenized_corpus(documents: list, stemmer: nltk.stem.WordNetLemmati
     """
     final_corpus = [preprocess_text(abstract, stemmer, en_stop)
                     for abstract in documents if abstract.strip() != '']
+    return final_corpus
     word_punctuation_tokenizer = WordPunctTokenizer()
     return [word_punctuation_tokenizer.tokenize(sent) for sent in final_corpus]
 
@@ -203,12 +223,12 @@ def load_txtdata(args: argparse.Namespace, strict_loading_list: list = BASE_PROP
     Returns:
         List[Dict]: list of dictionaries storing information regarding the document
     """
-    with open(args.proj_dir + args.data_file, 'r', encoding="utf8") as f:
+    # with open(args.proj_dir + args.data_file, 'r', encoding="utf8") as f:
+    with open(args.data_file, 'r', encoding="utf8") as f:
         data = f.readlines()
 
-    if ABSTRACT in strict_loading_list and N_CITATION in strict_loading_list:
-        data_dicts = [{ABSTRACT: sent, N_CITATION: 1}
-                      for sent in data]
+    if ABSTRACT in strict_loading_list:
+        data_dicts = [{ABSTRACT: sent} for sent in data]
     else:
         raise NotImplementedError(
             'This feature is not ready. Please adapt the source code to your use case!')
@@ -225,7 +245,8 @@ def load_data(args: argparse.Namespace) -> List[Dict]:
     Returns:
         List[Dict]: list of dictionaries storing information regarding the document
     """
-    strict_loading_list = args.strict_loading_list if args.strict_loading_list else BASE_PROPERTY_LIST
+    # strict_loading_list = args.strict_loading_list if args.strict_loading_list else BASE_PROPERTY_LIST
+    strict_loading_list = BASE_PROPERTY_LIST
 
     data = None
     if '.xml' in args.data_file or (args.data_file[-1] == '/' and args.data_file_type == 'xml'):

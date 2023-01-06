@@ -98,8 +98,10 @@ def get_chunk_embeddings(ft_model: gensim.models.fasttext.FastText, chunks: list
                     except AttributeError:
                         embs.append(np.array(ft_model[token]))
                 except KeyError:
-                    print(f'{token} not in vocab!')
+                    # print(f'{token} not in vocab!')
                     continue
+            if not len(embs):
+                continue
             embs = np.stack(embs)
             avg_emb = np.average(embs, axis=0)
         avg_embs.append(avg_emb)

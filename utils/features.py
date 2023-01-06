@@ -48,6 +48,7 @@ def get_speed(chunk_emb: list) -> tuple:
     Returns:
         tuple[list, float]: returns the distances between each pair of elements in chunk emb and the average speed
     """
+    # print(chunk_emb)
     chunk_emb = chunk_emb[~np.all(chunk_emb == 0, axis=1)]
     T = len(chunk_emb)
     distances = []
